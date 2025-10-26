@@ -19,10 +19,13 @@ export async function fetchTwitterTrends(apifyToken?: string): Promise<TwitterTr
   }
   
   try {
-    // Use Apify's Twitter Trends scraper
-    const actorId = 'clockworks/twitter-trends-scraper';
+    // Use Apify's Twitter Scraper to search for trending AI topics
+    const actorId = 'apify/twitter-scraper';
     
-    // Start the scraper
+    console.log('   Starting Twitter search...');
+    
+    
+    // Start the scraper to find trending AI topics
     const runResponse = await fetch(
       `https://api.apify.com/v2/acts/${actorId}/runs`,
       {
@@ -32,8 +35,9 @@ export async function fetchTwitterTrends(apifyToken?: string): Promise<TwitterTr
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          locations: ['United States'],
-          maxTrends: 30
+          searchTerms: ['#AI', '#AIautomation', '#buildinpublic', 'AI agents'],
+          maxTweets: 30,
+          sort: 'Top'
         })
       }
     );
@@ -45,9 +49,9 @@ export async function fetchTwitterTrends(apifyToken?: string): Promise<TwitterTr
     const runData = await runResponse.json();
     const runId = runData.data.id;
     
-    // Wait for scraper to complete (usually 10-15 seconds)
-    console.log('   ⏳ Waiting for X trends scraper...');
-    await new Promise(resolve => setTimeout(resolve, 15000));
+    // Wait for scraper to complete
+    console.log('   ⏳ Waiting for Twitter scraper...');
+    await new Promise(resolve => setTimeout(resolve, 12000));
     
     // Get results
     const resultsResponse = await fetch(
@@ -63,40 +67,47 @@ export async function fetchTwitterTrends(apifyToken?: string): Promise<TwitterTr
       throw new Error(`Failed to get results: ${resultsResponse.status}`);
     }
     
+    
     const results = await resultsResponse.json();
     
-    // Process trends
+    // Process tweets and extract trending topics
     const trends: TwitterTrend[] = [];
+    const topicCounts = new Map<string, number>();
     
-    for (const item of results.slice(0, 30)) {
-      const topic = item.name || item.trend || '';
-      const volume = item.tweet_volume || item.volume || 0;
+    for (const tweet of results.slice(0, 50)) {
+      const text = tweet.text || tweet.full_text || '';
+      const engagement = (tweet.likes || 0) + (tweet.retweets || 0);
       
-      // Filter for AI/business/tech relevance
-      const topicLower = topic.toLowerCase();
+      // Extract hashtags and topics
+      const hashtags = text.match(/#\w+/g) || [];
+      for (const tag of hashtags) {
+        const topic = tag.replace('#', '').toLowerCase();
+        topicCounts.set(topic, (topicCounts.get(topic) || 0) + engagement);
+      }
+    }
+    
+    // Convert to trending topics
+    for (const [topic, volume] of Array.from(topicCounts.entries()).slice(0, 20)) {
       const isRelevant = 
-        topicLower.includes('ai') ||
-        topicLower.includes('automation') ||
-        topicLower.includes('tech') ||
-        topicLower.includes('business') ||
-        topicLower.includes('startup') ||
-        topicLower.includes('build') ||
-        topicLower.includes('code') ||
-        topicLower.includes('dev');
+        topic.includes('ai') ||
+        topic.includes('automation') ||
+        topic.includes('build') ||
+        topic.includes('tech') ||
+        topic.includes('dev');
       
-      if (isRelevant && topic.length > 3) {
+      if (isRelevant) {
         let category = 'trending_opportunities';
-        if (topicLower.includes('ai') || topicLower.includes('automation')) {
+        if (topic.includes('ai') || topic.includes('automation')) {
           category = 'ai_automation';
-        } else if (topicLower.includes('build') || topicLower.includes('launch')) {
+        } else if (topic.includes('build')) {
           category = 'builder_stories';
         }
         
         trends.push({
-          topic: topic.replace('#', ''),
+          topic,
           tweet_volume: volume,
           category,
-          engagement_estimate: volume * 10 // Rough estimate
+          engagement_estimate: volume * 10
         });
       }
     }
