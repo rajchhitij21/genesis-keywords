@@ -59,7 +59,7 @@ export default function Dashboard() {
     try {
       // Fetch stats
       const { data: statsData } = await supabase.rpc('get_keyword_stats');
-      setStats(statsData);
+      setStats(statsData as any);
 
       // Fetch keywords
       const { data: keywordsData } = await supabase

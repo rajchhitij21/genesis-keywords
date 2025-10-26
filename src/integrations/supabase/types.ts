@@ -291,6 +291,87 @@ export type Database = {
           },
         ]
       }
+      keyword_variations: {
+        Row: {
+          analyzed_at: string | null
+          category: string | null
+          created_at: string | null
+          growth_rate: number | null
+          hn_mentions: number | null
+          hn_points: number | null
+          id: string
+          interest_data: Json | null
+          keyword: string
+          notes: string | null
+          published_at: string | null
+          reddit_mentions: number | null
+          reddit_upvotes: number | null
+          related_queries: Json | null
+          run_id: string | null
+          source: string | null
+          source_data: Json | null
+          source_item: string | null
+          status: string | null
+          total_engagement: number | null
+          trend_score: number | null
+          twitter_engagement: number | null
+          twitter_mentions: number | null
+          type: string
+        }
+        Insert: {
+          analyzed_at?: string | null
+          category?: string | null
+          created_at?: string | null
+          growth_rate?: number | null
+          hn_mentions?: number | null
+          hn_points?: number | null
+          id?: string
+          interest_data?: Json | null
+          keyword: string
+          notes?: string | null
+          published_at?: string | null
+          reddit_mentions?: number | null
+          reddit_upvotes?: number | null
+          related_queries?: Json | null
+          run_id?: string | null
+          source?: string | null
+          source_data?: Json | null
+          source_item?: string | null
+          status?: string | null
+          total_engagement?: number | null
+          trend_score?: number | null
+          twitter_engagement?: number | null
+          twitter_mentions?: number | null
+          type?: string
+        }
+        Update: {
+          analyzed_at?: string | null
+          category?: string | null
+          created_at?: string | null
+          growth_rate?: number | null
+          hn_mentions?: number | null
+          hn_points?: number | null
+          id?: string
+          interest_data?: Json | null
+          keyword?: string
+          notes?: string | null
+          published_at?: string | null
+          reddit_mentions?: number | null
+          reddit_upvotes?: number | null
+          related_queries?: Json | null
+          run_id?: string | null
+          source?: string | null
+          source_data?: Json | null
+          source_item?: string | null
+          status?: string | null
+          total_engagement?: number | null
+          trend_score?: number | null
+          twitter_engagement?: number | null
+          twitter_mentions?: number | null
+          type?: string
+        }
+        Relationships: []
+      }
       performance_tracking: {
         Row: {
           backlinks_earned: number | null
@@ -365,6 +446,57 @@ export type Database = {
           },
         ]
       }
+      pipeline_runs: {
+        Row: {
+          completed_at: string | null
+          cost_usd: number | null
+          error_message: string | null
+          error_stack: string | null
+          external_sources_fetched: number | null
+          id: string
+          keywords_checked: number | null
+          keywords_saved: number | null
+          results: Json | null
+          runtime_seconds: number | null
+          started_at: string | null
+          status: string | null
+          trending_keywords_found: number | null
+          variations_generated: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          cost_usd?: number | null
+          error_message?: string | null
+          error_stack?: string | null
+          external_sources_fetched?: number | null
+          id?: string
+          keywords_checked?: number | null
+          keywords_saved?: number | null
+          results?: Json | null
+          runtime_seconds?: number | null
+          started_at?: string | null
+          status?: string | null
+          trending_keywords_found?: number | null
+          variations_generated?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          cost_usd?: number | null
+          error_message?: string | null
+          error_stack?: string | null
+          external_sources_fetched?: number | null
+          id?: string
+          keywords_checked?: number | null
+          keywords_saved?: number | null
+          results?: Json | null
+          runtime_seconds?: number | null
+          started_at?: string | null
+          status?: string | null
+          trending_keywords_found?: number | null
+          variations_generated?: number | null
+        }
+        Relationships: []
+      }
       trend_master: {
         Row: {
           created_at: string
@@ -430,7 +562,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_keyword_stats: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never
