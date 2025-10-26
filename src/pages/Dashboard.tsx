@@ -66,11 +66,11 @@ export default function Dashboard() {
       const { data: statsData } = await supabase.rpc('get_keyword_stats');
       setStats(statsData as any);
 
-      // Fetch keywords
+      // Fetch keywords (latest first)
       const { data: keywordsData } = await supabase
         .from('keyword_variations')
         .select('*')
-        .order('trend_score', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(50);
       setKeywords(keywordsData || []);
 

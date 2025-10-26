@@ -2,3 +2,15 @@ project_id = "kyeusjkivowioqxzwgpn"
 
 [functions.keyword-pipeline]
 verify_jwt = false
+
+[functions.cleanup-old-data]
+verify_jwt = false
+
+[functions.trends]
+verify_jwt = false
+
+[functions.trends-detail]
+verify_jwt = false
+
+[functions.trends-stats]
+verify_jwt = false
