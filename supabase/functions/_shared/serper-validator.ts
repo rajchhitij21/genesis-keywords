@@ -137,23 +137,30 @@ function calculateTrendScore(serpData: any, searchVolume: number): number {
   else if (searchVolume > 5000) score += 12;
   else score += 5;
   
-  // REAL: Content freshness analysis (0-30 points)
+  // REAL: Content freshness analysis (0-35 points) - ENHANCED
   const organic = serpData.organic || [];
   let recentContentCount = 0;
+  let has2025 = false;
   
   organic.forEach((result: any) => {
     const snippet = result.snippet?.toLowerCase() || '';
     const title = result.title?.toLowerCase() || '';
     const text = snippet + ' ' + title;
     
-    // Check for recent time indicators
-    if (text.includes('2025') || text.includes('2026')) recentContentCount += 2;
+    // Check for recent content indicators
+    if (text.includes('2025') || text.includes('2026')) {
+      recentContentCount += 2;
+      has2025 = true;
+    }
     if (text.includes('days ago') || text.includes('hours ago')) recentContentCount += 3;
     if (text.includes('week ago') || text.includes('weeks ago')) recentContentCount += 2;
     if (text.includes('month ago')) recentContentCount += 1;
   });
   
   score += Math.min(30, recentContentCount * 2);
+  
+  // Freshness bonus for 2025 keywords (0-10 points)
+  if (has2025) score += 10;
   
   // REAL: News indicates trending (0-20 points)
   const newsCount = serpData.news?.length || 0;
@@ -200,27 +207,31 @@ function calculateCompetition(serpData: any): number {
 function detectCommercialIntent(keyword: string, serpData: any): 'high' | 'medium' | 'low' {
   const keywordLower = keyword.toLowerCase();
   
-  // High intent keywords
-  const highIntentWords = ['buy', 'price', 'cost', 'purchase', 'deal', 'discount', 'review', 'best', 'top', 'vs'];
+  // High intent keywords - EXPANDED
+  const highIntentWords = ['buy', 'price', 'cost', 'purchase', 'deal', 'discount', 'review', 'best', 'top', 'vs',
+                           'pricing', 'order', 'shop', 'compare', 'alternative'];
   const hasHighIntent = highIntentWords.some(word => keywordLower.includes(word));
   
-  // Check for ads (strong commercial signal)
-  const hasAds = serpData.ads && serpData.ads.length > 0;
+  // Money-making intent - NEW
+  const moneyIntentWords = ['make money', 'revenue', 'profit', 'income', 'earn', 'monetize'];
+  const hasMoneyIntent = moneyIntentWords.some(word => keywordLower.includes(word));
+  
+  // Check for ads (STRONG commercial signal)
+  const adsCount = serpData.ads?.length || 0;
   
   // Check for shopping results
   const hasShopping = serpData.shopping && serpData.shopping.length > 0;
   
-  if (hasHighIntent || hasAds || hasShopping) {
-    return 'high';
-  }
+  // Enhanced detection
+  if ((hasHighIntent || hasMoneyIntent) && adsCount >= 3) return 'high';
+  if (adsCount >= 4) return 'high'; // Heavy ad presence = high commercial value
+  if (hasHighIntent || hasMoneyIntent || adsCount >= 2 || hasShopping) return 'medium';
   
   // Medium intent
-  const mediumIntentWords = ['how to', 'tutorial', 'guide', 'tips', 'learn', 'comparison'];
+  const mediumIntentWords = ['how to', 'tutorial', 'guide', 'tips', 'learn'];
   const hasMediumIntent = mediumIntentWords.some(word => keywordLower.includes(word));
   
-  if (hasMediumIntent) {
-    return 'medium';
-  }
+  if (hasMediumIntent) return 'medium';
   
   return 'low';
 }

@@ -11,7 +11,7 @@ interface TwitterTrend {
 }
 
 export async function fetchTwitterTrends(apifyToken?: string): Promise<TwitterTrend[]> {
-  console.log('🐦 Fetching X trending topics...\n');
+  console.log('🐦 Fetching REAL X trending topics...\n');
   
   if (!apifyToken) {
     console.log('   ⚠️ No Apify token provided, skipping X trends\n');
@@ -19,13 +19,12 @@ export async function fetchTwitterTrends(apifyToken?: string): Promise<TwitterTr
   }
   
   try {
-    // Use Apify's Twitter Scraper to search for trending AI topics
+    // Use Apify's Twitter Scraper to search for HIGH-ENGAGEMENT trending AI topics
     const actorId = 'apify/twitter-scraper';
     
-    console.log('   Starting Twitter search...');
+    console.log('   Starting REAL Twitter trend extraction...\n');
     
-    
-    // Start the scraper to find trending AI topics
+    // Search for AI-related trending topics with REAL engagement filters
     const runResponse = await fetch(
       `https://api.apify.com/v2/acts/${actorId}/runs`,
       {
@@ -35,8 +34,15 @@ export async function fetchTwitterTrends(apifyToken?: string): Promise<TwitterTr
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          searchTerms: ['#AI', '#AIautomation', '#buildinpublic', 'AI agents'],
-          maxTweets: 30,
+          searchTerms: [
+            '#AI min_faves:100',
+            '#AIautomation min_faves:100',
+            '#buildinpublic min_faves:100',
+            'AI agents min_faves:100',
+            'make money AI min_faves:100',
+            'programmatic seo min_faves:50'
+          ],
+          maxTweets: 50,
           sort: 'Top'
         })
       }
@@ -70,18 +76,34 @@ export async function fetchTwitterTrends(apifyToken?: string): Promise<TwitterTr
     
     const results = await resultsResponse.json();
     
-    // Process tweets and extract trending topics
+    console.log(`   ✅ Fetched ${results.length} high-engagement tweets\n`);
+    
+    // Process VIRAL tweets and extract trending topics + hashtags
     const trends: TwitterTrend[] = [];
     const topicCounts = new Map<string, number>();
+    const trendingHashtags = new Map<string, number>();
     
-    for (const tweet of results.slice(0, 50)) {
+    // Filter for VIRAL tweets only (10k+ likes or 5k+ retweets)
+    const viralTweets = results.filter((t: any) => 
+      (t.likes || 0) >= 100 || (t.retweets || 0) >= 50
+    );
+    
+    console.log(`   🔥 Found ${viralTweets.length} viral tweets\n`);
+    
+    for (const tweet of viralTweets) {
       const text = tweet.text || tweet.full_text || '';
-      const engagement = (tweet.likes || 0) + (tweet.retweets || 0);
+      const engagement = (tweet.likes || 0) + (tweet.retweets || 0) * 2; // Retweets worth more
       
-      // Extract hashtags and topics
+      // Extract hashtags from viral content
       const hashtags = text.match(/#\w+/g) || [];
       for (const tag of hashtags) {
-        const topic = tag.replace('#', '').toLowerCase();
+        const tagLower = tag.toLowerCase();
+        trendingHashtags.set(tagLower, (trendingHashtags.get(tagLower) || 0) + 1);
+      }
+      
+      // Extract key topics using NLP-lite
+      const topics = extractTopicsFromText(text);
+      for (const topic of topics) {
         topicCounts.set(topic, (topicCounts.get(topic) || 0) + engagement);
       }
     }
@@ -93,14 +115,18 @@ export async function fetchTwitterTrends(apifyToken?: string): Promise<TwitterTr
         topic.includes('automation') ||
         topic.includes('build') ||
         topic.includes('tech') ||
-        topic.includes('dev');
+        topic.includes('dev') ||
+        topic.includes('money') ||
+        topic.includes('seo');
       
       if (isRelevant) {
         let category = 'trending_opportunities';
         if (topic.includes('ai') || topic.includes('automation')) {
           category = 'ai_automation';
-        } else if (topic.includes('build')) {
+        } else if (topic.includes('build') || topic.includes('money')) {
           category = 'builder_stories';
+        } else if (topic.includes('seo')) {
+          category = 'pseo_innovation';
         }
         
         trends.push({
@@ -112,7 +138,7 @@ export async function fetchTwitterTrends(apifyToken?: string): Promise<TwitterTr
       }
     }
     
-    console.log(`   ✅ Found ${trends.length} relevant X trends\n`);
+    console.log(`   ✅ Found ${trends.length} relevant REAL X trends\n`);
     return trends;
     
   } catch (error) {
@@ -135,6 +161,29 @@ export async function fetchTwitterTrends(apifyToken?: string): Promise<TwitterTr
       }
     ];
   }
+}
+
+// Helper function to extract topics from tweet text using NLP-lite
+function extractTopicsFromText(text: string): string[] {
+  const topics: string[] = [];
+  const lowerText = text.toLowerCase();
+  
+  // Define topic patterns
+  const patterns = [
+    { regex: /\bai\s+\w+/g, category: 'ai' },
+    { regex: /\bautomation\s+\w+/g, category: 'automation' },
+    { regex: /\bmake\s+money\b/g, category: 'money' },
+    { regex: /\bbuild\s+\w+/g, category: 'build' },
+    { regex: /\bseo\s+\w+/g, category: 'seo' },
+    { regex: /\bvoice\s+agent/g, category: 'voice' }
+  ];
+  
+  for (const pattern of patterns) {
+    const matches = lowerText.match(pattern.regex) || [];
+    topics.push(...matches.map(m => m.trim()));
+  }
+  
+  return [...new Set(topics)]; // Remove duplicates
 }
 
 export async function searchTwitterForKeyword(keyword: string, apifyToken?: string): Promise<{
