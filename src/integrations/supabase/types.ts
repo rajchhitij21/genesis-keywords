@@ -295,6 +295,8 @@ export type Database = {
         Row: {
           analyzed_at: string | null
           category: string | null
+          commercial_intent: string | null
+          competition_score: number | null
           created_at: string | null
           growth_rate: number | null
           hn_mentions: number | null
@@ -308,12 +310,15 @@ export type Database = {
           reddit_upvotes: number | null
           related_queries: Json | null
           run_id: string | null
+          search_volume: number | null
+          serp_features: Json | null
           source: string | null
           source_data: Json | null
           source_item: string | null
           status: string | null
           total_engagement: number | null
           trend_score: number | null
+          trend_velocity: string | null
           twitter_engagement: number | null
           twitter_mentions: number | null
           type: string
@@ -321,6 +326,8 @@ export type Database = {
         Insert: {
           analyzed_at?: string | null
           category?: string | null
+          commercial_intent?: string | null
+          competition_score?: number | null
           created_at?: string | null
           growth_rate?: number | null
           hn_mentions?: number | null
@@ -334,12 +341,15 @@ export type Database = {
           reddit_upvotes?: number | null
           related_queries?: Json | null
           run_id?: string | null
+          search_volume?: number | null
+          serp_features?: Json | null
           source?: string | null
           source_data?: Json | null
           source_item?: string | null
           status?: string | null
           total_engagement?: number | null
           trend_score?: number | null
+          trend_velocity?: string | null
           twitter_engagement?: number | null
           twitter_mentions?: number | null
           type?: string
@@ -347,6 +357,8 @@ export type Database = {
         Update: {
           analyzed_at?: string | null
           category?: string | null
+          commercial_intent?: string | null
+          competition_score?: number | null
           created_at?: string | null
           growth_rate?: number | null
           hn_mentions?: number | null
@@ -360,12 +372,15 @@ export type Database = {
           reddit_upvotes?: number | null
           related_queries?: Json | null
           run_id?: string | null
+          search_volume?: number | null
+          serp_features?: Json | null
           source?: string | null
           source_data?: Json | null
           source_item?: string | null
           status?: string | null
           total_engagement?: number | null
           trend_score?: number | null
+          trend_velocity?: string | null
           twitter_engagement?: number | null
           twitter_mentions?: number | null
           type?: string

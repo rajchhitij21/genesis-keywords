@@ -30,6 +30,11 @@ interface Keyword {
   total_engagement: number;
   status: string;
   created_at: string;
+  search_volume?: number;
+  competition_score?: number;
+  commercial_intent?: string;
+  trend_velocity?: string;
+  serp_features?: any;
 }
 
 interface PipelineRun {
@@ -377,14 +382,21 @@ export default function Dashboard() {
                         </Badge>
                       </td>
                       <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <div className="h-2 w-16 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-primary to-accent" 
-                              style={{ width: `${kw.trend_score}%` }}
-                            />
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-16 bg-muted rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-primary to-accent" 
+                                style={{ width: `${kw.trend_score}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium text-foreground">{kw.trend_score}</span>
                           </div>
-                          <span className="text-sm font-medium text-foreground">{kw.trend_score}</span>
+                          {kw.search_volume > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              {kw.search_volume.toLocaleString()} searches/mo
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="py-4 px-4">
@@ -399,9 +411,21 @@ export default function Dashboard() {
                         </div>
                       </td>
                       <td className="py-4 px-4">
-                        <Badge className={getStatusColor(kw.status)}>
-                          {kw.status}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge className={getStatusColor(kw.status)}>
+                            {kw.status}
+                          </Badge>
+                          {kw.commercial_intent && (
+                            <Badge variant="outline" className="text-xs">
+                              {kw.commercial_intent === 'high' ? '💰' : kw.commercial_intent === 'medium' ? '📊' : '📝'} {kw.commercial_intent}
+                            </Badge>
+                          )}
+                          {kw.trend_velocity && (
+                            <Badge variant="outline" className="text-xs">
+                              {kw.trend_velocity === 'rising' ? '🔥' : kw.trend_velocity === 'stable' ? '📊' : '📉'} {kw.trend_velocity}
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

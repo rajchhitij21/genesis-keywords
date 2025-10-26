@@ -6,6 +6,7 @@ interface KeywordVariation {
   type: string;
   source: string;
   source_item: string;
+  commercial_intent?: string;
 }
 
 export async function generateKeywordVariations(
@@ -20,27 +21,40 @@ export async function generateKeywordVariations(
   for (let i = 0; i < sources.length; i += batchSize) {
     const batch = sources.slice(i, i + batchSize);
     
-    const prompt = `You are an SEO keyword researcher. Given these trending topics/discussions, generate 3-5 commercial-intent keyword variations for each.
+    const prompt = `You are a keyword research expert focusing on commercial, money-making opportunities.
 
-Topics:
+Given these trending topics and tools:
+
 ${batch.map((s, idx) => `${idx + 1}. [${s.source}] ${s.item}`).join('\n')}
 
-Requirements:
-- Focus on commercial intent (people ready to buy/subscribe)
-- Use natural search language
-- Include comparisons, tutorials, reviews, pricing
-- Categorize each keyword: builder_stories, ai_automation, tool_comparisons, real_vs_hype, trending_opportunities, or pseo_innovation
+Generate 3-5 HIGH-VALUE commercial keywords for EACH item above that:
+1. Target people looking to MAKE MONEY or BUILD BUSINESSES with these trends
+2. Have clear commercial/buying intent (words like "revenue", "profit", "build", "start", "make money")
+3. Are realistic search queries people would type
+4. Are 3-7 words long
+5. Focus on opportunities, not just information
 
-Return ONLY valid JSON array:
+Categories to use:
+- builder_stories (making money, income, revenue, building in public)
+- ai_automation (automation tools, voice agents, ai systems)
+- tool_comparisons (vs, comparison, alternative, best, review)
+- real_vs_hype (worth it, reality, claims, verified, actually)
+- trending_opportunities (opportunity, emerging, market, advantage, ideas)
+- pseo_innovation (seo, traffic, content, programmatic, automation)
+
+Return ONLY a JSON array with this format:
 [
   {
-    "keyword": "example keyword phrase",
-    "category": "ai_automation",
+    "keyword": "exact keyword phrase",
+    "category": "one of the categories above",
     "type": "variation",
-    "source": "reddit",
-    "source_item": "original topic text"
+    "source": "${batch[0]?.source || 'source'}",
+    "source_item": "brief description of what inspired this",
+    "commercial_intent": "high"
   }
-]`;
+]
+
+Focus on MONEY-MAKING angles. Every keyword should help someone start or grow a business.`;
 
     try {
       const response = await fetch(
@@ -53,8 +67,10 @@ Return ONLY valid JSON array:
               parts: [{ text: prompt }]
             }],
             generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 2000
+              temperature: 0.8,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 2048,
             }
           })
         }
@@ -68,7 +84,6 @@ Return ONLY valid JSON array:
       const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       
-      // Extract JSON from response
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
         const variations = JSON.parse(jsonMatch[0]);
@@ -76,7 +91,6 @@ Return ONLY valid JSON array:
         console.log(`✅ Batch ${Math.floor(i / batchSize) + 1}: Generated ${variations.length} keywords`);
       }
       
-      // Rate limit
       await new Promise(resolve => setTimeout(resolve, 1000));
       
     } catch (error) {
