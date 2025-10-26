@@ -3,7 +3,7 @@
  * Fetches real trending searches and rising queries
  */
 
-interface TrendData {
+export interface TrendData {
   keyword: string;
   trend_velocity: 'rising' | 'stable' | 'declining';
   growth_percentage: number;

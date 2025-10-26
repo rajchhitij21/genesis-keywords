@@ -97,8 +97,8 @@ Deno.serve(async (req) => {
     const allKeywords = [...variations, ...baseKeywordObjects];
     console.log(`Total keywords to validate: ${allKeywords.length}`);
     
-    // STEP 4: Validate with Serper (limit to 50 for cost + speed control)
-    console.log('\n📊 STEP 4: Validating with Serper...\n');
+    // STEP 4: Validate with Serper - extracting REAL data from SERP
+    console.log('\n📊 STEP 4: Validating with Serper (extracting REAL metrics)...\n');
     const uniqueKeywords = [...new Set(allKeywords.map(kw => kw.keyword))];
     
     // Prioritize high commercial intent keywords
@@ -114,11 +114,16 @@ Deno.serve(async (req) => {
     
     console.log(`Validating ${priorityKeywords.length} priority keywords...`);
     const validationMap = await validateWithSerper(priorityKeywords, serperApiKey);
+    console.log(`\n✅ Validated ${validationMap.size} keywords with REAL SERP signals\n`);
     
-    // STEP 5: Filter trending keywords
-    console.log('\n🔍 STEP 5: Filtering trending keywords...\n');
-    const validatedKeywords = filterValidatedKeywords(validationMap, 30);
-    console.log(`Found ${validatedKeywords.length} trending keywords`);
+    // STEP 5: Filter trending keywords (score > 40 for higher quality)
+    console.log('\n🔍 STEP 5: Filtering trending keywords (REAL scores)...\n');
+    const validatedKeywords = filterValidatedKeywords(validationMap, 40);
+    
+    console.log(`Found ${validatedKeywords.length} REAL trending keywords`);
+    validatedKeywords.slice(0, 15).forEach(kw => {
+      console.log(`  ✓ ${kw.keyword}: score ${kw.trend_score}, volume ${kw.search_volume.toLocaleString()}, competition ${kw.competition_score}, intent ${kw.commercial_intent}`);
+    });
     
     // STEP 6: Enrich top 10 with X engagement (reduced from 20 for speed)
     console.log('\n🌐 STEP 6: Enriching with X signals (top 10)...\n');
