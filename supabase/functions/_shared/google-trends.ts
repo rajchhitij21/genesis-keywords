@@ -1,10 +1,4 @@
-/**
- * Google Trends Data Fetcher - REAL DATA ENGINE
- * Fetches actual trending searches using Google Trends API
- */
-
-import googleTrends from "https://esm.sh/google-trends-api@4.9.2";
-
+// Real-time Google Trends data fetcher using RSS feed (100% free)
 export interface TrendData {
   keyword: string;
   trend_velocity: 'rising' | 'stable' | 'declining';
@@ -14,142 +8,134 @@ export interface TrendData {
 }
 
 export async function fetchGoogleTrends(): Promise<TrendData[]> {
-  console.log('📈 Fetching REAL Google Trends data...\n');
+  console.log("📈 Fetching REAL Google Trends data (RSS)...\n");
   
   try {
-    // Fetch REAL daily trending searches from Google Trends
-    const dailyTrendsResult = await googleTrends.dailyTrends({
-      geo: 'US',
-      category: 'all'
-    });
+    // Fetch from Google Trends RSS feed (free, no API key)
+    const response = await fetch('https://trends.google.com/trends/trendingsearches/daily/rss?geo=US');
     
-    const parsedTrends = JSON.parse(dailyTrendsResult);
-    const trendingSearches = parsedTrends.default?.trendingSearchesDays?.[0]?.trendingSearches || [];
+    if (!response.ok) {
+      throw new Error(`RSS fetch failed: ${response.status}`);
+    }
     
-    console.log(`   ✅ Fetched ${trendingSearches.length} real trending topics from Google\n`);
-    
+    const xmlText = await response.text();
     const trends: TrendData[] = [];
     
-    // Process up to 20 trending topics
-    for (const trend of trendingSearches.slice(0, 20)) {
-      const keyword = trend.title?.query || '';
+    // Parse XML to extract trending searches
+    const items = xmlText.match(/<item>[\s\S]*?<\/item>/g) || [];
+    
+    for (const item of items.slice(0, 20)) {
+      // Extract keyword from <title>
+      const titleMatch = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/);
+      const keyword = titleMatch ? titleMatch[1] : '';
+      
       if (!keyword) continue;
       
-      // Get traffic volume from Google Trends data
-      const traffic = parseInt(trend.formattedTraffic?.replace(/[^0-9]/g, '') || '0');
+      // Extract traffic from <ht:approx_traffic>
+      const trafficMatch = item.match(/<ht:approx_traffic><!\[CDATA\[(.*?)\]\]><\/ht:approx_traffic>/);
+      const traffic = trafficMatch ? trafficMatch[1].replace(/[^0-9]/g, '') : '100';
       
-      // Calculate growth percentage based on traffic
-      let growthPercentage = 100;
-      if (traffic > 1000000) growthPercentage = 500;
-      else if (traffic > 500000) growthPercentage = 400;
-      else if (traffic > 100000) growthPercentage = 300;
-      else if (traffic > 50000) growthPercentage = 200;
+      // Extract news article for category detection
+      const newsMatch = item.match(/<ht:news_item_title><!\[CDATA\[(.*?)\]\]><\/ht:news_item_title>/);
+      const newsTitle = newsMatch ? newsMatch[1] : '';
       
-      // Determine category from related articles
-      const category = detectCategory(keyword, trend.articles || []);
-      
-      // Get related queries
-      const relatedQueries = trend.relatedQueries?.map((q: any) => q.query).slice(0, 5) || [];
-      
-      // Determine trend velocity
-      const trendVelocity: 'rising' | 'stable' | 'declining' = traffic > 100000 ? 'rising' : 
-                           traffic > 50000 ? 'stable' : 'declining';
+      // Fetch related queries using Google Autocomplete (free)
+      const relatedQueries = await fetchRelatedQueries(keyword);
       
       trends.push({
         keyword,
-        trend_velocity: trendVelocity,
-        growth_percentage: growthPercentage,
-        category,
-        related_queries: relatedQueries
+        trend_velocity: 'rising',
+        growth_percentage: parseInt(traffic) || 100,
+        category: detectCategory(keyword, newsTitle),
+        related_queries: relatedQueries,
       });
     }
     
-    console.log(`   ✅ Processed ${trends.length} real trending topics\n`);
+    console.log(`   ✅ Fetched ${trends.length} REAL trending topics from RSS\n`);
     return trends;
     
   } catch (error) {
-    console.error('   ❌ Google Trends API error:', error instanceof Error ? error.message : 'Unknown error');
-    console.log('   ⚠️ Using fallback trending topics\n');
+    console.error("   ❌ Google Trends RSS error:", error instanceof Error ? error.message : 'Unknown error');
+    console.log("   ⚠️ Using fallback trending topics\n");
     
-    // Minimal fallback
-    const trends: TrendData[] = [
+    return [
       {
-        keyword: 'ai automation 2025',
-        trend_velocity: 'rising',
-        growth_percentage: 250,
-        category: 'ai_automation',
-        related_queries: ['best ai automation', 'ai tools']
+        keyword: "AI automation 2025",
+        trend_velocity: "rising",
+        growth_percentage: 150,
+        category: "ai_automation",
+        related_queries: ["AI tools 2025", "automation software", "AI agents"],
       },
       {
-        keyword: 'make money online',
-        trend_velocity: 'rising',
-        growth_percentage: 300,
-        category: 'builder_stories',
-        related_queries: ['side hustle', 'passive income']
-      }
+        keyword: "make money with AI",
+        trend_velocity: "rising",
+        growth_percentage: 120,
+        category: "builder_stories",
+        related_queries: ["AI side hustle", "AI business ideas", "passive income AI"],
+      },
     ];
-    
-    console.log(`   ✅ Using ${trends.length} fallback topics\n`);
-    return trends;
   }
 }
 
-function detectCategory(keyword: string, articles: any[]): string {
+// Helper function to detect category based on keyword and news context
+function detectCategory(keyword: string, newsContext: string): string {
   const lowerKeyword = keyword.toLowerCase();
-  const articleText = articles.map((a: any) => (a.title || '') + ' ' + (a.snippet || '')).join(' ').toLowerCase();
-  
-  // Category detection logic
-  if (lowerKeyword.includes('money') || lowerKeyword.includes('revenue') || lowerKeyword.includes('profit') || 
-      articleText.includes('entrepreneur') || articleText.includes('business')) {
-    return 'builder_stories';
-  }
-  
-  if (lowerKeyword.includes('vs') || lowerKeyword.includes('comparison') || lowerKeyword.includes('alternative') ||
-      lowerKeyword.includes('review')) {
-    return 'tool_comparisons';
-  }
-  
-  if (lowerKeyword.includes('ai') || lowerKeyword.includes('automation') || lowerKeyword.includes('voice') ||
-      articleText.includes('artificial intelligence') || articleText.includes('machine learning')) {
+  const lowerContext = newsContext.toLowerCase();
+  const combined = lowerKeyword + ' ' + lowerContext;
+
+  // AI Automation
+  if (combined.match(/\b(ai automation|ai agent|voice agent|workflow|n8n|zapier|make\.com)\b/i)) {
     return 'ai_automation';
   }
-  
-  if (lowerKeyword.includes('opportunity') || lowerKeyword.includes('emerging') || lowerKeyword.includes('trend') ||
-      lowerKeyword.includes('market')) {
-    return 'trending_opportunities';
+
+  // Tool Comparisons
+  if (combined.match(/\b(vs|versus|alternative|comparison|better than|compared)\b/i)) {
+    return 'tool_comparisons';
   }
-  
-  if (lowerKeyword.includes('reality') || lowerKeyword.includes('worth it') || lowerKeyword.includes('hype') ||
-      lowerKeyword.includes('verified')) {
+
+  // Builder Stories (money-making)
+  if (combined.match(/\b(make money|revenue|profit|income|earn|business idea|side hustle)\b/i)) {
+    return 'builder_stories';
+  }
+
+  // Real vs Hype
+  if (combined.match(/\b(worth it|reality|hype|truth|scam|legit|really work)\b/i)) {
     return 'real_vs_hype';
   }
-  
-  if (lowerKeyword.includes('seo') || lowerKeyword.includes('traffic') || lowerKeyword.includes('content')) {
+
+  // Trending Opportunities
+  if (combined.match(/\b(emerging|opportunity|market size|trend|growth|2025|future)\b/i)) {
+    return 'trending_opportunities';
+  }
+
+  // pSEO Innovation
+  if (combined.match(/\b(seo|programmatic|content|ranking|traffic|keyword)\b/i)) {
     return 'pseo_innovation';
   }
-  
+
   return 'trending_opportunities';
 }
 
+// Helper function to fetch related queries using Google Autocomplete (free)
 export async function fetchRelatedQueries(keyword: string): Promise<string[]> {
-  console.log(`   🔍 Fetching related queries for "${keyword}"...`);
-  
   try {
-    // Use Google autocomplete API (free, no key needed)
+    const encodedKeyword = encodeURIComponent(keyword);
     const response = await fetch(
-      `https://suggestqueries.google.com/complete/search?client=firefox&q=${encodeURIComponent(keyword)}`
+      `http://suggestqueries.google.com/complete/search?client=firefox&q=${encodedKeyword}`,
+      { signal: AbortSignal.timeout(5000) } // 5 second timeout
     );
     
-    if (!response.ok) return [];
+    if (!response.ok) {
+      return [];
+    }
     
     const data = await response.json();
-    const suggestions = data[1]?.slice(0, 10) || [];
+    const suggestions = (data[1] || []).slice(0, 10);
     
-    console.log(`      ✅ Found ${suggestions.length} related queries`);
+    console.log(`   📋 Found ${suggestions.length} related queries for "${keyword}"`);
     return suggestions;
-    
   } catch (error) {
-    console.log('      ⚠️ Could not fetch related queries');
+    console.error(`   ❌ Failed to fetch related queries for "${keyword}":`, error instanceof Error ? error.message : 'Unknown error');
     return [];
   }
 }

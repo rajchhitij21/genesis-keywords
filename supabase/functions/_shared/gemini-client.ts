@@ -18,6 +18,8 @@ export async function generateKeywordVariations(
   const allVariations: KeywordVariation[] = [];
   const batchSize = 5; // Reduced batch size for better reliability
   const maxRetries = 3;
+  let successCount = 0;
+  let failCount = 0;
   
   for (let i = 0; i < sources.length; i += batchSize) {
     const batch = sources.slice(i, i + batchSize);
@@ -115,6 +117,7 @@ CRITICAL: Return only the JSON array, no other text.`;
         allVariations.push(...variations);
         console.log(`   ✅ Batch ${Math.floor(i / batchSize) + 1}: Generated ${variations.length} keywords`);
         success = true;
+        successCount++;
         
         // Rate limiting delay
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -130,9 +133,10 @@ CRITICAL: Return only the JSON array, no other text.`;
     
     if (!success) {
       console.error(`   ⚠️ Failed to process batch ${Math.floor(i / batchSize) + 1} after ${maxRetries} attempts`);
+      failCount++;
     }
   }
   
-  console.log(`\n✅ Total variations generated: ${allVariations.length}\n`);
+  console.log(`\n✅ Generation complete: ${allVariations.length} keywords (${successCount} batches succeeded, ${failCount} failed)\n`);
   return allVariations;
 }

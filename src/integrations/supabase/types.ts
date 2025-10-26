@@ -577,6 +577,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_pipeline_health: {
+        Args: never
+        Returns: {
+          keywords_generated: number
+          last_run: string
+          minutes_since_last_run: number
+          status: string
+        }[]
+      }
       get_keyword_stats: { Args: never; Returns: Json }
     }
     Enums: {

@@ -91,6 +91,32 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
+    
+    // Subscribe to real-time keyword updates
+    const channel = supabase
+      .channel('keyword-updates')
+      .on(
+        'postgres_changes',
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'keyword_variations' 
+        },
+        (payload) => {
+          console.log('New keyword detected:', payload.new);
+          
+          // Add new keyword to the list
+          setKeywords((prev) => [payload.new as Keyword, ...prev].slice(0, 50));
+          
+          // Show toast notification
+          toast.success(`🔥 New trending keyword: ${(payload.new as Keyword).keyword} (Score: ${(payload.new as Keyword).trend_score})`);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const runPipeline = async () => {
@@ -239,11 +265,17 @@ export default function Dashboard() {
       <header className="border-b border-border bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                Keyword Pipeline
-              </h1>
-              <p className="text-muted-foreground mt-1">AI-Powered Trend Discovery System</p>
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Keyword Pipeline
+                </h1>
+                <p className="text-muted-foreground mt-1">AI-Powered Real-Time Trend Discovery</p>
+              </div>
+              <Badge variant="outline" className="flex items-center gap-1.5 bg-success/10 text-success border-success/20">
+                <span className="h-2 w-2 rounded-full bg-success animate-pulse"></span>
+                <span className="text-xs font-medium">LIVE</span>
+              </Badge>
             </div>
             <Button 
               onClick={runPipeline} 
