@@ -90,20 +90,36 @@ export default function Dashboard() {
 
   const runPipeline = async () => {
     setRunningPipeline(true);
-    toast.info('Pipeline will run automatically every 12 hours');
+    toast.info('Starting keyword pipeline...');
     
-    // For now, just simulate by generating some sample keywords
-    setTimeout(async () => {
-      const sampleKeywords = [
-        { keyword: 'ai automation revenue', category: 'ai_automation', trend_score: 87 },
-        { keyword: 'cursor ai vs copilot 2025', category: 'tool_comparisons', trend_score: 92 },
-        { keyword: 'ai voice agent tutorial', category: 'ai_automation', trend_score: 78 },
-      ];
+    try {
+      const { data, error } = await supabase.functions.invoke('keyword-pipeline');
       
-      toast.success('Sample keywords generated! Connect Lovable Cloud to enable full pipeline.');
+      if (error) {
+        console.error('Pipeline error:', error);
+        toast.error('Pipeline failed: ' + error.message);
+        setRunningPipeline(false);
+        return;
+      }
+      
+      const result = data as any;
+      
+      if (result?.success) {
+        toast.success(`Pipeline completed! Found ${result.stats.keywords_saved} trending keywords`);
+        toast.info(`Cost: $${result.stats.cost_usd.toFixed(4)} | Runtime: ${result.stats.runtime_seconds}s`);
+      } else {
+        toast.error('Pipeline completed with errors');
+      }
+      
+      // Refresh dashboard data
+      await fetchData();
+      
+    } catch (error) {
+      console.error('Pipeline execution error:', error);
+      toast.error('Failed to run pipeline');
+    } finally {
       setRunningPipeline(false);
-      fetchData();
-    }, 2000);
+    }
   };
 
   const getStatusColor = (status: string) => {
