@@ -22,59 +22,77 @@ export async function validateWithSerper(
   
   const results = new Map<string, ValidationResult>();
   
-  for (let i = 0; i < keywords.length; i++) {
-    const keyword = keywords[i];
+  
+  // Process in parallel batches for speed
+  const batchSize = 10;
+  const batches = [];
+  
+  for (let i = 0; i < keywords.length; i += batchSize) {
+    batches.push(keywords.slice(i, i + batchSize));
+  }
+  
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex];
     
-    try {
-      // Use Serper search API to get SERP data
-      const response = await fetch('https://google.serper.dev/search', {
-        method: 'POST',
-        headers: {
-          'X-API-KEY': serperApiKey,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          q: keyword,
-          gl: 'us',
-          hl: 'en',
-          num: 10
-        })
-      });
-      
-      if (!response.ok) {
-        console.log(`  ⚠️ Serper error for "${keyword}": ${response.status}`);
-        continue;
+    // Process batch in parallel
+    const batchPromises = batch.map(async (keyword) => {
+      try {
+        const response = await fetch('https://google.serper.dev/search', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': serperApiKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            q: keyword,
+            gl: 'us',
+            hl: 'en',
+            num: 10
+          })
+        });
+        
+        if (!response.ok) {
+          return null;
+        }
+        
+        const data = await response.json();
+        
+        const searchVolume = estimateSearchVolume(data);
+        const trendScore = calculateTrendScore(data, searchVolume);
+        const competitionScore = calculateCompetition(data);
+        const commercialIntent = detectCommercialIntent(keyword, data);
+        const serpFeatures = extractSerpFeatures(data);
+        const relatedSearches = data.relatedSearches?.map((s: any) => s.query).slice(0, 5) || [];
+        
+        return {
+          keyword,
+          result: {
+            keyword,
+            search_volume: searchVolume,
+            trend_score: trendScore,
+            competition_score: competitionScore,
+            commercial_intent: commercialIntent,
+            serp_features: serpFeatures,
+            related_searches: relatedSearches
+          }
+        };
+      } catch (error) {
+        return null;
       }
-      
-      const data = await response.json();
-      
-      // Calculate metrics
-      const searchVolume = estimateSearchVolume(data);
-      const trendScore = calculateTrendScore(data, searchVolume);
-      const competitionScore = calculateCompetition(data);
-      const commercialIntent = detectCommercialIntent(keyword, data);
-      const serpFeatures = extractSerpFeatures(data);
-      const relatedSearches = data.relatedSearches?.map((s: any) => s.query).slice(0, 5) || [];
-      
-      results.set(keyword, {
-        keyword,
-        search_volume: searchVolume,
-        trend_score: trendScore,
-        competition_score: competitionScore,
-        commercial_intent: commercialIntent,
-        serp_features: serpFeatures,
-        related_searches: relatedSearches
-      });
-      
-      console.log(`  ✓ ${keyword}: score ${trendScore}, volume ${searchVolume}, intent ${commercialIntent}`);
-      
-      // Rate limit: 2 seconds between requests
-      if (i < keywords.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+    });
+    
+    const batchResults = await Promise.all(batchPromises);
+    
+    for (const item of batchResults) {
+      if (item) {
+        results.set(item.keyword, item.result);
+        console.log(`  ✓ ${item.keyword}: score ${item.result.trend_score}, volume ${item.result.search_volume}, intent ${item.result.commercial_intent}`);
       }
-      
-    } catch (error) {
-      console.error(`  ❌ Error validating "${keyword}":`, error instanceof Error ? error.message : 'Unknown error');
+    }
+    
+    // Small delay between batches only
+    if (batchIndex < batches.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
   

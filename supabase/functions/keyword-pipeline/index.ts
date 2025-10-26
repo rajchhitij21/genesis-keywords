@@ -97,11 +97,11 @@ Deno.serve(async (req) => {
     const allKeywords = [...variations, ...baseKeywordObjects];
     console.log(`Total keywords to validate: ${allKeywords.length}`);
     
-    // STEP 4: Validate with Serper (limit to 100 for cost control)
+    // STEP 4: Validate with Serper (limit to 50 for cost + speed control)
     console.log('\n📊 STEP 4: Validating with Serper...\n');
     const uniqueKeywords = [...new Set(allKeywords.map(kw => kw.keyword))];
     
-    // Sort by commercial intent and take top 100
+    // Prioritize high commercial intent keywords
     const priorityKeywords = allKeywords
       .sort((a, b) => {
         const intentScore = { high: 3, medium: 2, low: 1 };
@@ -109,8 +109,10 @@ Deno.serve(async (req) => {
                (intentScore[a.commercial_intent as keyof typeof intentScore] || 0);
       })
       .map(kw => kw.keyword)
-      .slice(0, 100);
+      .filter((kw, idx, arr) => arr.indexOf(kw) === idx) // Remove duplicates
+      .slice(0, 50); // Limit to 50 for speed
     
+    console.log(`Validating ${priorityKeywords.length} priority keywords...`);
     const validationMap = await validateWithSerper(priorityKeywords, serperApiKey);
     
     // STEP 5: Filter trending keywords
@@ -118,20 +120,16 @@ Deno.serve(async (req) => {
     const validatedKeywords = filterValidatedKeywords(validationMap, 30);
     console.log(`Found ${validatedKeywords.length} trending keywords`);
     
-    // STEP 6: Enrich top 20 with X engagement
-    console.log('\n🌐 STEP 6: Enriching with X signals (top 20)...\n');
+    // STEP 6: Enrich top 10 with X engagement (reduced from 20 for speed)
+    console.log('\n🌐 STEP 6: Enriching with X signals (top 10)...\n');
     const enrichedKeywords = [];
     
-    for (let i = 0; i < Math.min(validatedKeywords.length, 20); i++) {
-      const validated = validatedKeywords[i];
-      
-      // Find original keyword data
+    // Process top 10 in parallel
+    const enrichmentPromises = validatedKeywords.slice(0, 10).map(async (validated) => {
       const originalData = allKeywords.find(k => k.keyword === validated.keyword);
-      
-      // Get X engagement
       const xData = await searchTwitterForKeyword(validated.keyword, apifyToken);
       
-      enrichedKeywords.push({
+      return {
         ...validated,
         ...originalData,
         twitter_mentions: xData.mentions,
@@ -140,18 +138,16 @@ Deno.serve(async (req) => {
         reddit_upvotes: 0,
         hn_mentions: 0,
         hn_points: 0
-      });
-      
-      // Rate limit
-      if (i < 19) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      }
-    }
+      };
+    });
     
-    // Add remaining without X enrichment
+    const enriched = await Promise.all(enrichmentPromises);
+    enrichedKeywords.push(...enriched);
+    
+    // Add remaining without X enrichment (skip enrichment to save time)
     const finalKeywords = [
       ...enrichedKeywords,
-      ...validatedKeywords.slice(20).map(v => {
+      ...validatedKeywords.slice(10).map(v => {
         const originalData = allKeywords.find(k => k.keyword === v.keyword);
         return {
           ...v,
