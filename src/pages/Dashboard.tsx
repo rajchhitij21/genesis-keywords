@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, isSupabaseConfigured } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, TrendingUp, Database, Clock, Zap } from "lucide-react";
+import { Loader2, TrendingUp, Database, Clock, Zap, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface KeywordStats {
   total_keywords: number;
@@ -41,6 +42,7 @@ interface PipelineRun {
 }
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<KeywordStats | null>(null);
   const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [runs, setRuns] = useState<PipelineRun[]>([]);
@@ -48,6 +50,11 @@ export default function Dashboard() {
   const [runningPipeline, setRunningPipeline] = useState(false);
 
   const fetchData = async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       // Fetch stats
@@ -124,6 +131,83 @@ export default function Dashboard() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Show Cloud setup prompt if not configured
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b border-border bg-card/50 backdrop-blur-sm">
+          <div className="container mx-auto px-6 py-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Keyword Pipeline
+                </h1>
+                <p className="text-muted-foreground mt-1">AI-Powered Trend Discovery System</p>
+              </div>
+              <Button onClick={() => navigate('/')} variant="outline">
+                Back to Home
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <div className="container mx-auto px-6 py-20">
+          <Card className="max-w-2xl mx-auto border-warning/20">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-lg bg-warning/10 flex items-center justify-center">
+                  <AlertCircle className="h-6 w-6 text-warning" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl">Connect Lovable Cloud</CardTitle>
+                  <p className="text-muted-foreground mt-1">Required to activate the keyword pipeline</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-2">What you'll get:</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <span className="text-success mt-0.5">✓</span>
+                    <span>PostgreSQL database for storing keywords & trends</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-success mt-0.5">✓</span>
+                    <span>Serverless edge functions for the pipeline</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-success mt-0.5">✓</span>
+                    <span>Secure secret management for API keys</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-success mt-0.5">✓</span>
+                    <span>Auto-run pipeline every 12 hours</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <h4 className="font-semibold text-sm mb-2">After connecting, you'll need:</h4>
+                <ul className="space-y-1 text-sm text-muted-foreground">
+                  <li>• <strong>ANTHROPIC_API_KEY</strong> - For Claude AI keyword generation</li>
+                  <li>• <strong>APIFY_TOKEN</strong> (optional) - For Twitter trends</li>
+                  <li>• <strong>PRODUCTHUNT_API_KEY</strong> (optional) - For AI tools feed</li>
+                </ul>
+              </div>
+
+              <div className="pt-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Click the button in the chat to connect Lovable Cloud and activate your keyword pipeline.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
