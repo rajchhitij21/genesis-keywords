@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, TrendingUp, Database, Clock, Zap, AlertCircle, TestTube } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import Navigation from "@/components/Navigation";
 
 interface KeywordStats {
   total_keywords: number;
@@ -176,8 +177,11 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="flex min-h-screen items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
       </div>
     );
   }
@@ -186,6 +190,7 @@ export default function Dashboard() {
   if (!isSupabaseConfigured) {
     return (
       <div className="min-h-screen bg-background">
+        <Navigation />
         <header className="border-b border-border bg-card/50 backdrop-blur-sm">
           <div className="container mx-auto px-6 py-6">
             <div className="flex items-center justify-between">
@@ -267,6 +272,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Navigation />
       {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm">
         <div className="container mx-auto px-6 py-6">

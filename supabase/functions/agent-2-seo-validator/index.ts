@@ -7,6 +7,7 @@ import { scoreCompetition } from './competition-scorer.ts';
 import { analyzeContentGaps } from './content-gap-analyzer.ts';
 import { clusterKeywords } from './keyword-clusterer.ts';
 import { calculatePriority } from './priority-scorer.ts';
+import { scoreTrend } from './trend-scorer.ts';
 
 interface Agent1Keyword {
   keyword: string;
@@ -157,15 +158,16 @@ async function validateKeywords(keywords: Agent1Keyword[]): Promise<any[]> {
       try {
         const serpData = await fetchSerp(kw.keyword);
         
-        // Run all analyzers
-        const volumeEstimate = estimateSearchVolume(serpData);
+        // Run all analyzers with enhanced V3 logic
+        const volumeEstimate = estimateSearchVolume(serpData, kw.keyword);
         const competitionScore = scoreCompetition(serpData);
         const contentGap = analyzeContentGaps(serpData, kw.keyword);
+        const trendScore = scoreTrend(serpData, kw.keyword);
         const priority = calculatePriority(
           volumeEstimate,
           competitionScore,
           contentGap,
-          undefined // No trend score from Agent 1 yet
+          trendScore
         );
         
         return {
@@ -174,10 +176,11 @@ async function validateKeywords(keywords: Agent1Keyword[]): Promise<any[]> {
           source: kw.source,
           category: kw.category,
           
-          // Volume data
+          // Volume data with V3 breakdown
           estimated_volume: volumeEstimate.estimated_volume,
           volume_confidence: volumeEstimate.confidence,
           volume_signals: volumeEstimate.signals,
+          volume_breakdown: volumeEstimate.breakdown,
           
           // Competition data
           competition_score: competitionScore.score,
@@ -192,6 +195,13 @@ async function validateKeywords(keywords: Agent1Keyword[]): Promise<any[]> {
             opportunity_score: contentGap.opportunity_score,
             content_suggestions: contentGap.content_suggestions,
           },
+          
+          // Trend data with V3 breakdown
+          trend_score: trendScore.score,
+          trend_direction: trendScore.direction,
+          trend_confidence: trendScore.confidence,
+          trend_signals: trendScore.signals,
+          trend_breakdown: trendScore.breakdown,
           
           // Priority data
           priority_score: priority.score,

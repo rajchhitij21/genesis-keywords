@@ -1,12 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { TrendingUp, Zap, Database, Brain, TestTube } from "lucide-react";
+import Navigation from "@/components/Navigation";
 
 const Index = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <Navigation />
       <div className="container mx-auto px-6 py-20">
         {/* Hero Section */}
         <div className="max-w-4xl mx-auto text-center mb-20">

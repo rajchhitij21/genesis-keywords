@@ -1,0 +1,39 @@
+{
+  "keywords": [
+    {
+      "keyword": "AI automation tools",
+      "type": "informational",
+      "source": "manual_test",
+      "category": "technology",
+      "commercial_intent": "high"
+    },
+    {
+      "keyword": "best laptops 2024",
+      "type": "commercial",
+      "source": "manual_test",
+      "category": "electronics",
+      "commercial_intent": "high"
+    },
+    {
+      "keyword": "how does photosynthesis work",
+      "type": "informational",
+      "source": "manual_test",
+      "category": "education",
+      "commercial_intent": "low"
+    },
+    {
+      "keyword": "python tutorial",
+      "type": "informational",
+      "source": "manual_test",
+      "category": "programming",
+      "commercial_intent": "medium"
+    },
+    {
+      "keyword": "AI trends 2025",
+      "type": "informational",
+      "source": "manual_test",
+      "category": "technology",
+      "commercial_intent": "medium"
+    }
+  ]
+}

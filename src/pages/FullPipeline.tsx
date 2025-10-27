@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Play, Zap, ArrowRight, CheckCircle2, TrendingUp, Target } from 'lucide-react';
+import { Loader2, Play, Zap, ArrowRight, CheckCircle2, TrendingUp, Target, BarChart3, Lightbulb } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
+import Navigation from '@/components/Navigation';
 
 interface PipelineResult {
   success: boolean;
@@ -92,8 +93,10 @@ export default function FullPipeline() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
+    <div>
+      <Navigation />
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 via-orange-500 to-red-500 bg-clip-text text-transparent">
@@ -331,20 +334,39 @@ export default function FullPipeline() {
                       className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent transition-colors"
                     >
                       <div className="flex-1">
-                        <div className="font-semibold">{kw.keyword}</div>
-                        <div className="flex items-center gap-2 mt-1 text-xs">
+                        <div className="font-semibold flex items-center gap-2">
+                          {kw.keyword}
+                          {kw.volume_signals?.has_videos && <span title="Has Videos">📹</span>}
+                          {kw.volume_signals?.has_news && <span title="Has News">📰</span>}
+                          {kw.volume_signals?.has_shopping && <span title="Has Shopping">🛒</span>}
+                          {kw.volume_signals?.commercial_words > 0 && <span title="Commercial Intent">💰</span>}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
                           <span className="text-muted-foreground">
-                            Vol: {kw.estimated_volume.toLocaleString()}
+                            📊 Vol: {kw.estimated_volume.toLocaleString()} ({kw.volume_confidence})
                           </span>
                           <span className="text-muted-foreground">•</span>
                           <span className="text-muted-foreground">
-                            Comp: {kw.competition_score}/100
+                            🎯 Comp: {kw.competition_score}/100
+                          </span>
+                          <span className="text-muted-foreground">•</span>
+                          <span className={`font-medium ${
+                            kw.trend_direction === 'rising' ? 'text-green-600' : 
+                            kw.trend_direction === 'declining' ? 'text-red-600' : 'text-gray-600'
+                          }`}>
+                            {kw.trend_direction === 'rising' ? '📈' : kw.trend_direction === 'declining' ? '📉' : '➡️'} {kw.trend_direction} ({kw.trend_score}/100)
                           </span>
                           <span className="text-muted-foreground">•</span>
                           <span className="text-muted-foreground">
-                            Score: {kw.priority_score}/100
+                            ⭐ Score: {kw.priority_score}/100
                           </span>
                         </div>
+                        {kw.content_gaps?.content_suggestions && kw.content_gaps.content_suggestions.length > 0 && (
+                          <div className="mt-2 text-xs text-muted-foreground flex items-start gap-1">
+                            <Lightbulb className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                            <span className="line-clamp-1">{kw.content_gaps.content_suggestions[0]}</span>
+                          </div>
+                        )}
                       </div>
                       <Badge className={`${getPriorityColor(kw.priority_tier)} text-white`}>
                         {kw.priority_tier.toUpperCase()}
@@ -356,6 +378,7 @@ export default function FullPipeline() {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }

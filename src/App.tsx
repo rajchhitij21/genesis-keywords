@@ -8,6 +8,8 @@ import Dashboard from "./pages/Dashboard";
 import TestAgent1V2 from "./pages/TestAgent1V2";
 import TestAgent2 from "./pages/TestAgent2";
 import FullPipeline from "./pages/FullPipeline";
+import ApiPlayground from "./pages/ApiPlayground";
+import Genesis from "./Genesis";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +26,8 @@ const App = () => (
           <Route path="/test-agent-1" element={<TestAgent1V2 />} />
           <Route path="/test-agent-2" element={<TestAgent2 />} />
           <Route path="/full-pipeline" element={<FullPipeline />} />
+          <Route path="/api-playground" element={<ApiPlayground />} />
+          <Route path="/genesis-premium" element={<Genesis />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

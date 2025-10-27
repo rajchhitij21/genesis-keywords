@@ -1,5 +1,9 @@
 {
   "imports": {
-    "rss-parser": "npm:rss-parser@^3.13.0"
+    "rss-parser": "npm:rss-parser@^3.13.0",
+    "playwright": "npm:playwright@^1.40.0",
+    "natural": "npm:natural@^6.10.0",
+    "compromise": "npm:compromise@^14.10.0",
+    "cheerio": "npm:cheerio@^1.0.0-rc.12"
   }
 }
