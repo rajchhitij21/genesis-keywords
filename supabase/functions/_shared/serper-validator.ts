@@ -13,15 +13,79 @@ interface ValidationResult {
   related_searches: string[];
 }
 
+// Multi-key rotation state
+let currentKeyIndex = 0;
+const SERPER_KEYS = [
+  'SERPER_KEY_1',
+  'SERPER_KEY_2',
+  'SERPER_KEY_3',
+  'SERPER_KEY_4',
+  'SERPER_KEY_5',
+  'SERPER_KEY_6',
+  'SERPER_KEY_7'
+];
+
+// Fetch SERP data with automatic key rotation
+async function fetchSerpWithRotation(keyword: string): Promise<any> {
+  const maxRetries = SERPER_KEYS.length;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const keyName = SERPER_KEYS[currentKeyIndex];
+    const apiKey = Deno.env.get(keyName);
+    
+    if (!apiKey) {
+      console.log(`⚠️ ${keyName} not found, skipping...`);
+      currentKeyIndex = (currentKeyIndex + 1) % SERPER_KEYS.length;
+      continue;
+    }
+    
+    try {
+      const response = await fetch('https://google.serper.dev/search', {
+        method: 'POST',
+        headers: {
+          'X-API-KEY': apiKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          q: keyword,
+          gl: 'us',
+          hl: 'en',
+          num: 10
+        })
+      });
+      
+      if (response.status === 429) {
+        // Rate limit hit, try next key
+        console.log(`⚠️ ${keyName} rate limited (429), rotating to next key...`);
+        currentKeyIndex = (currentKeyIndex + 1) % SERPER_KEYS.length;
+        continue;
+      }
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const data = await response.json();
+      // console.log(`✅ Used ${keyName} for "${keyword}"`);
+      return data;
+      
+    } catch (error) {
+      console.error(`❌ ${keyName} failed for "${keyword}":`, error.message);
+      currentKeyIndex = (currentKeyIndex + 1) % SERPER_KEYS.length;
+    }
+  }
+  
+  throw new Error(`All Serper keys exhausted for keyword: ${keyword}`);
+}
+
 export async function validateWithSerper(
   keywords: string[],
-  serperApiKey: string
+  serperApiKey?: string // Keep for backward compatibility but won't be used
 ): Promise<Map<string, ValidationResult>> {
-  console.log('\n📊 VALIDATING WITH SERPER API\n');
+  console.log('\n📊 VALIDATING WITH SERPER API (Multi-Key Rotation)\n');
   console.log(`Processing ${keywords.length} keywords...\n`);
   
   const results = new Map<string, ValidationResult>();
-  
   
   // Process in parallel batches for speed
   const batchSize = 10;
@@ -37,25 +101,7 @@ export async function validateWithSerper(
     // Process batch in parallel
     const batchPromises = batch.map(async (keyword) => {
       try {
-        const response = await fetch('https://google.serper.dev/search', {
-          method: 'POST',
-          headers: {
-            'X-API-KEY': serperApiKey,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            q: keyword,
-            gl: 'us',
-            hl: 'en',
-            num: 10
-          })
-        });
-        
-        if (!response.ok) {
-          return null;
-        }
-        
-        const data = await response.json();
+        const data = await fetchSerpWithRotation(keyword);
         
         // DEBUG: Log first response to see actual structure
         if (batchIndex === 0 && keyword === batch[0]) {

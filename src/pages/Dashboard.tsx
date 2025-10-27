@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, TrendingUp, Database, Clock, Zap, AlertCircle } from "lucide-react";
+import { Loader2, TrendingUp, Database, Clock, Zap, AlertCircle, TestTube } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -195,9 +195,15 @@ export default function Dashboard() {
                 </h1>
                 <p className="text-muted-foreground mt-1">AI-Powered Trend Discovery System</p>
               </div>
-              <Button onClick={() => navigate('/')} variant="outline">
-                Back to Home
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => navigate('/test-agent-1')} variant="outline" className="border-purple-500">
+                  <TestTube className="mr-2 h-4 w-4" />
+                  Test V2
+                </Button>
+                <Button onClick={() => navigate('/')} variant="outline">
+                  Back to Home
+                </Button>
+              </div>
             </div>
           </div>
         </header>

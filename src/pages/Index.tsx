@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, Zap, Database, Brain } from "lucide-react";
+import { TrendingUp, Zap, Database, Brain, TestTube } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -31,6 +31,15 @@ const Index = () => {
               className="bg-primary hover:bg-primary/90 text-lg px-8"
             >
               View Dashboard
+            </Button>
+            <Button 
+              onClick={() => navigate('/test-agent-1')} 
+              size="lg"
+              variant="outline"
+              className="text-lg px-8 border-2 border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-950"
+            >
+              <TestTube className="mr-2 h-5 w-5" />
+              Test Agent 1 V2
             </Button>
           </div>
         </div>
