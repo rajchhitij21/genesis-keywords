@@ -1,16 +1,17 @@
-// Genesis Unified API - Combines Agent 1 & Agent 2 V3 + Database Storage
+// Genesis Unified API - Combines Agent 1 & Agent 2 V3 + Gemini Filter + Database Storage
 // Single endpoint for complete keyword analysis pipeline
-// STEP 1: Agent 1 → STEP 2: Agent 2 V3 → STEP 3: Save to Database
+// STEP 1: Agent 1 → STEP 2: Agent 2 V3 → STEP 2.5: Gemini Filter → STEP 3: Save to Database
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
+import { filterKeywordsWithGemini } from '../_shared/gemini-keyword-filter.ts';
 
 interface UnifiedRequest {
-  business: string;
-  niche: string;
-  target_audience: string;
-  goals?: string[];
-  competitors?: string[];
+  business?: string; // Optional - only used for database metadata
+  niche?: string; // Optional - only used for database metadata
+  target_audience?: string; // Optional - only used for database metadata
+  goals?: string[]; // Not used - Agent 1 is pre-configured
+  competitors?: string[]; // Not used - Agent 1 is pre-configured
 }
 
 interface UnifiedResponse {
@@ -43,6 +44,14 @@ interface UnifiedResponse {
     content_opportunities: number;
     validated_keywords_data: any[];
     clusters: any[];
+  };
+  gemini_filter_results: {
+    total_analyzed: number;
+    total_selected: number;
+    duplicates_removed: number;
+    selection_rate: number;
+    avg_score: number;
+    processing_time_ms: number;
   };
   database_storage: {
     keywords_saved: number;
@@ -83,14 +92,25 @@ serve(async (req) => {
     console.log('=================================');
     console.log(`Pipeline ID: ${pipelineId}`);
     
-    // Parse input
-    const input: UnifiedRequest = await req.json();
+    // Parse input (all fields optional - Agent 1 is pre-configured for AI automation niche)
+    let input: UnifiedRequest = {};
     
-    if (!input.business || !input.niche || !input.target_audience) {
-      throw new Error('Missing required fields: business, niche, target_audience');
+    try {
+      const body = await req.text();
+      if (body && body.trim()) {
+        input = JSON.parse(body);
+      }
+    } catch (error) {
+      // No body or invalid JSON - that's fine, use defaults
     }
     
-    console.log(`📋 Input: ${input.business} | ${input.niche} | ${input.target_audience}`);
+    // Set defaults for database metadata
+    input.business = input.business || 'AI Automation & Voice Agents';
+    input.niche = input.niche || 'AI automation, voice agents, programmatic SEO';
+    input.target_audience = input.target_audience || 'indie hackers, developers, AI builders';
+    
+    console.log(`📋 Metadata: ${input.business} | ${input.niche} | ${input.target_audience}`);
+    console.log('⚠️  Note: Agent 1 ignores these inputs - it\'s pre-trained for AI automation niche');
     
     // STEP 1: Call Agent 1 (Keyword Discovery)
     console.log('\n🔍 STEP 1: Running Agent 1 - Keyword Discovery...');
@@ -112,13 +132,50 @@ serve(async (req) => {
     
     console.log(`✅ Agent 2 Complete: ${agent2Response.validated_keywords.length} keywords validated`);
     
-    // STEP 3: Save Top Keywords to Database
-    console.log('\n💾 STEP 3: Saving Top Keywords to Database...');
+    // STEP 2.5: Filter Keywords with Gemini 2.5 Pro
+    console.log('\n🤖 STEP 2.5: Filtering Keywords with Gemini 2.5 Pro...');
+    let geminiFilterResult;
+    let finalKeywords = agent2Response.validated_keywords;
+    
+    try {
+      const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+      if (!geminiApiKey) {
+        console.log('⚠️  GEMINI_API_KEY not set, skipping Gemini filter');
+        geminiFilterResult = null;
+      } else {
+        // Initialize Supabase client for duplicate checking
+        const supabase = createClient(
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+          {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false
+            }
+          }
+        );
+        
+        geminiFilterResult = await filterKeywordsWithGemini(
+          agent2Response.validated_keywords,
+          supabase,
+          geminiApiKey
+        );
+        
+        finalKeywords = geminiFilterResult.filtered_keywords;
+        console.log(`✅ Gemini Filter Complete: ${finalKeywords.length} elite keywords selected`);
+      }
+    } catch (error) {
+      console.error('⚠️  Gemini filter failed, using Agent 2 results:', error.message);
+      geminiFilterResult = null;
+    }
+    
+    // STEP 3: Save Filtered Keywords to Database
+    console.log('\n💾 STEP 3: Saving Filtered Keywords to Database...');
     const dbResult = await saveTopKeywordsToDatabase(
       pipelineId,
       input,
       agent1Response.keywords,
-      agent2Response.validated_keywords
+      finalKeywords
     );
     console.log(`✅ Database Storage Complete: ${dbResult.keywords_saved} keywords saved`);
     
@@ -162,6 +219,21 @@ serve(async (req) => {
         validated_keywords_data: agent2Response.validated_keywords,
         clusters: agent2Response.clusters || []
       },
+      gemini_filter_results: geminiFilterResult ? {
+        total_analyzed: geminiFilterResult.metadata.total_analyzed,
+        total_selected: geminiFilterResult.metadata.total_selected,
+        duplicates_removed: geminiFilterResult.metadata.duplicates_removed,
+        selection_rate: geminiFilterResult.metadata.selection_rate,
+        avg_score: geminiFilterResult.metadata.avg_score_selected,
+        processing_time_ms: geminiFilterResult.metadata.processing_time_ms
+      } : {
+        total_analyzed: 0,
+        total_selected: finalKeywords.length,
+        duplicates_removed: 0,
+        selection_rate: 1,
+        avg_score: 0,
+        processing_time_ms: 0
+      },
       database_storage: dbResult,
       executive_summary: executiveSummary,
       cost_breakdown: costs
@@ -203,14 +275,9 @@ serve(async (req) => {
 });
 
 // Call Agent 1 (Keyword Discovery)
+// Note: Agent 1 doesn't use these inputs - it's pre-configured for AI automation
 async function callAgent1(input: UnifiedRequest): Promise<any> {
-  const agent1Payload = {
-    business: input.business,
-    niche: input.niche,
-    target_audience: input.target_audience,
-    goals: input.goals || [],
-    competitors: input.competitors || []
-  };
+  const agent1Payload = {}; // Empty payload - Agent 1 ignores input
   
   const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/agent-1-trend-hunter`, {
     method: 'POST',

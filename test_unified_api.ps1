@@ -45,7 +45,16 @@ try {
     Write-Host "  High Priority: $($response.agent2_results.priority_distribution.high)" -ForegroundColor White
     Write-Host ""
     
-    Write-Host "💾 Database Storage (NEW!):" -ForegroundColor Green
+    Write-Host "🤖 Gemini Filter Results (NEW!):" -ForegroundColor Cyan
+    Write-Host "  Total Analyzed: $($response.gemini_filter_results.total_analyzed)" -ForegroundColor White
+    Write-Host "  Total Selected: $($response.gemini_filter_results.total_selected)" -ForegroundColor White
+    Write-Host "  Duplicates Removed: $($response.gemini_filter_results.duplicates_removed)" -ForegroundColor White
+    Write-Host "  Selection Rate: $([math]::Round($response.gemini_filter_results.selection_rate * 100, 1))%" -ForegroundColor White
+    Write-Host "  Avg Score: $([math]::Round($response.gemini_filter_results.avg_score, 1))" -ForegroundColor White
+    Write-Host "  Processing Time: $($response.gemini_filter_results.processing_time_ms)ms" -ForegroundColor White
+    Write-Host ""
+    
+    Write-Host "💾 Database Storage:" -ForegroundColor Green
     Write-Host "  Keywords Saved: $($response.database_storage.keywords_saved)" -ForegroundColor White
     Write-Host "  Table: $($response.database_storage.table)" -ForegroundColor White
     Write-Host "  Status: $($response.database_storage.status)" -ForegroundColor White
