@@ -211,6 +211,96 @@ export type Database = {
           },
         ]
       }
+      genesis_keywords_vault: {
+        Row: {
+          business_name: string | null
+          category: string | null
+          commercial_intent: string | null
+          competition_score: number | null
+          content_created_at: string | null
+          content_gaps: Json | null
+          content_status: string | null
+          content_url: string | null
+          created_at: string | null
+          estimated_volume: number | null
+          id: string
+          keyword: string
+          keyword_type: string | null
+          metadata: Json | null
+          niche: string | null
+          overall_score: number | null
+          pipeline_id: string
+          priority_tier: string | null
+          rank_position: number | null
+          serp_features: Json | null
+          source: string | null
+          target_audience: string | null
+          trend_direction: string | null
+          trend_score: number | null
+          trend_signals: Json | null
+          updated_at: string | null
+          volume_range: string | null
+        }
+        Insert: {
+          business_name?: string | null
+          category?: string | null
+          commercial_intent?: string | null
+          competition_score?: number | null
+          content_created_at?: string | null
+          content_gaps?: Json | null
+          content_status?: string | null
+          content_url?: string | null
+          created_at?: string | null
+          estimated_volume?: number | null
+          id?: string
+          keyword: string
+          keyword_type?: string | null
+          metadata?: Json | null
+          niche?: string | null
+          overall_score?: number | null
+          pipeline_id: string
+          priority_tier?: string | null
+          rank_position?: number | null
+          serp_features?: Json | null
+          source?: string | null
+          target_audience?: string | null
+          trend_direction?: string | null
+          trend_score?: number | null
+          trend_signals?: Json | null
+          updated_at?: string | null
+          volume_range?: string | null
+        }
+        Update: {
+          business_name?: string | null
+          category?: string | null
+          commercial_intent?: string | null
+          competition_score?: number | null
+          content_created_at?: string | null
+          content_gaps?: Json | null
+          content_status?: string | null
+          content_url?: string | null
+          created_at?: string | null
+          estimated_volume?: number | null
+          id?: string
+          keyword?: string
+          keyword_type?: string | null
+          metadata?: Json | null
+          niche?: string | null
+          overall_score?: number | null
+          pipeline_id?: string
+          priority_tier?: string | null
+          rank_position?: number | null
+          serp_features?: Json | null
+          source?: string | null
+          target_audience?: string | null
+          trend_direction?: string | null
+          trend_score?: number | null
+          trend_signals?: Json | null
+          updated_at?: string | null
+          volume_range?: string | null
+        }
+        Relationships: []
+      }
       keyword_intelligence: {
         Row: {
           ahrefs_data: string | null
