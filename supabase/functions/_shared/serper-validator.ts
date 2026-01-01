@@ -70,7 +70,7 @@ async function fetchSerpWithRotation(keyword: string): Promise<any> {
       return data;
       
     } catch (error) {
-      console.error(`❌ ${keyName} failed for "${keyword}":`, error.message);
+      console.error(`❌ ${keyName} failed for "${keyword}":`, error instanceof Error ? error.message : 'Unknown error');
       currentKeyIndex = (currentKeyIndex + 1) % SERPER_KEYS.length;
     }
   }

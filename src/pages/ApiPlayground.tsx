@@ -83,11 +83,11 @@ const ApiPlayground = () => {
     }
   };
 
-  const [currentRequest, setCurrentRequest] = useState(sampleRequests.unified);
+  const [currentRequest, setCurrentRequest] = useState<typeof sampleRequests[keyof typeof sampleRequests]>(sampleRequests.unified);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    setCurrentRequest(sampleRequests[tab as keyof typeof sampleRequests]);
+    setCurrentRequest(sampleRequests[tab as keyof typeof sampleRequests] as typeof sampleRequests[keyof typeof sampleRequests]);
     setResponse(null);
     setError(null);
   };
